@@ -1,114 +1,138 @@
-// SubjectPicker.jsx
-import React from "react";
+// src/components/SubjectPicker.jsx
+// Props:
+//   - value: "math" | "reading" | "vocab"
+//   - onChange: (newSubject: string) => void
+//   - dark?: boolean
+// Optional:
+//   - subjects?: string[] (default ["math","reading","vocab"])
+//   - showSurprise?: boolean (default true)
 
-const SUBJECTS = [
-  { key: "math", label: "Math", icon: MathIcon },
-  { key: "reading", label: "Reading", icon: ReadingIcon },
-  { key: "vocab", label: "Vocab", icon: VocabIcon },
-];
+import { useMemo, useRef } from "react";
 
-export default function SubjectPicker({ value, onChange, dark }) {
+export default function SubjectPicker({
+  value,
+  onChange,
+  dark = false,
+  subjects = ["math", "reading", "vocab"],
+  showSurprise = true,
+}) {
+  const wrapRef = useRef(null);
+  const idx = useMemo(() => Math.max(0, subjects.indexOf(value)), [subjects, value]);
+
+  function setSubject(s) {
+    if (!s || s === value) return;
+    onChange?.(s);
+  }
+
+  function keyNav(e) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End", "Enter", " "].includes(e.key)) return;
+    e.preventDefault();
+    const cur = Math.max(0, subjects.indexOf(value));
+    const clamp = (n) => Math.max(0, Math.min(n, subjects.length - 1));
+    if (e.key === "ArrowLeft") setSubject(subjects[clamp(cur - 1)]);
+    else if (e.key === "ArrowRight") setSubject(subjects[clamp(cur + 1)]);
+    else if (e.key === "Home") setSubject(subjects[0]);
+    else if (e.key === "End") setSubject(subjects[subjects.length - 1]);
+    else if (e.key === "Enter" || e.key === " ") setSubject(subjects[cur]);
+  }
+
   return (
     <div
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        backdropFilter: "saturate(180%) blur(6px)",
-        background: dark ? "rgba(12,12,12,0.5)" : "rgba(255,255,255,0.6)",
-        padding: "10px 12px",
-        borderBottom: dark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.06)",
-      }}
+      ref={wrapRef}
+      role="tablist"
+      aria-label="Choose subject"
+      onKeyDown={keyNav}
+      style={bar(dark)}
     >
-      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-        {SUBJECTS.map(({ key, label, icon: Icon }) => {
-          const active = value === key;
-          return (
-            <button
-              key={key}
-              onClick={() => onChange(key)}
-              aria-pressed={active}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
-                borderRadius: 999,
-                border: active
-                  ? "1px solid transparent"
-                  : dark
-                  ? "1px solid rgba(255,255,255,0.12)"
-                  : "1px solid rgba(0,0,0,0.12)",
-                background: active
-                  ? (dark ? "linear-gradient(0deg,#2a2a2a,#2a2a2a)" : "linear-gradient(0deg,#f2f2f2,#f2f2f2)")
-                  : "transparent",
-                color: dark ? "#fafafa" : "#111",
-                cursor: "pointer",
-                transition: "transform 120ms ease, background 160ms ease",
-              }}
-              onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-              onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
-            >
-              <Icon filled={active} dark={dark} />
-              <span style={{ fontWeight: 600, fontSize: 14 }}>{label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {subjects.map((s, i) => {
+        const active = i === idx;
+        return (
+          <button
+            key={s}
+            role="tab"
+            aria-selected={active}
+            aria-controls={`subject-panel-${s}`}
+            tabIndex={active ? 0 : -1}
+            onClick={() => setSubject(s)}
+            title={`Switch to ${label(s)}`}
+            style={chip(dark, active)}
+          >
+            {emoji(s)} {label(s)}
+          </button>
+        );
+      })}
+      {showSurprise && (
+        <button
+          onClick={() => {
+            const pool = subjects.filter((s) => s !== value);
+            const pick = pool[Math.floor(Math.random() * pool.length)] || value;
+            setSubject(pick);
+          }}
+          title="Surprise me"
+          style={ghost(dark)}
+          aria-label="Surprise me"
+        >
+          🎲 Surprise
+        </button>
+      )}
     </div>
   );
 }
 
-function MathIcon({ filled, dark }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M4 6h6M7 3v6M14 5h6M14 9h6M14 13h6M4 14l6 6M10 14l-6 6"
-        fill="none"
-        stroke={filled ? (dark ? "#fff" : "#111") : (dark ? "#ddd" : "#333")}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+/* ---------- helpers ---------- */
+
+function label(s) {
+  const map = { math: "Math", reading: "Reading", vocab: "Vocab" };
+  return map[s] || (s?.[0]?.toUpperCase() + s?.slice(1) || "Subject");
+}
+function emoji(s) {
+  if (s === "math") return "➗";
+  if (s === "reading") return "📚";
+  if (s === "vocab") return "📝";
+  return "▶︎";
 }
 
-function ReadingIcon({ filled, dark }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M4 5a3 3 0 0 1 3-3h13v16a3 3 0 0 1-3 3H4z"
-        fill="none"
-        stroke={filled ? (dark ? "#fff" : "#111") : (dark ? "#ddd" : "#333")}
-        strokeWidth="1.8"
-      />
-      <path
-        d="M7 7h9M7 10h9M7 13h6"
-        stroke={filled ? (dark ? "#fff" : "#111") : (dark ? "#ddd" : "#333")}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+/* ---------- styles ---------- */
 
-function VocabIcon({ filled, dark }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-      <path
-        d="M4 19V5a2 2 0 0 1 2-2h12"
-        fill="none"
-        stroke={filled ? (dark ? "#fff" : "#111") : (dark ? "#ddd" : "#333")}
-        strokeWidth="1.8"
-      />
-      <path
-        d="M8 15l2-6 2 6M9 13h2M14 10h6v8l-3-2-3 2z"
-        fill="none"
-        stroke={filled ? (dark ? "#fff" : "#111") : (dark ? "#ddd" : "#333")}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+const bar = (dark) => ({
+  position: "sticky",
+  top: 0,
+  zIndex: 50,
+  display: "flex",
+  gap: 8,
+  justifyContent: "center",
+  alignItems: "center",
+  padding: "10px 12px",
+  background: dark ? "rgba(12,12,14,0.75)" : "rgba(255,255,255,0.85)",
+  backdropFilter: "saturate(180%) blur(6px)",
+  borderBottom: dark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.06)",
+});
+
+const chip = (dark, active) => ({
+  padding: "8px 12px",
+  borderRadius: 999,
+  fontWeight: 800,
+  fontSize: 14,
+  cursor: "pointer",
+  border: active
+    ? "2px solid #2563EB"
+    : dark
+      ? "1px solid rgba(255,255,255,0.16)"
+      : "1px solid rgba(0,0,0,0.12)",
+  background: active
+    ? (dark ? "rgba(37,99,235,0.2)" : "rgba(37,99,235,0.12)")
+    : (dark ? "rgba(20,20,24,0.9)" : "#ffffff"),
+  color: dark ? "#E5E7EB" : "#111827",
+  transition: "transform 120ms ease, border-color 120ms ease",
+});
+
+const ghost = (dark) => ({
+  padding: "8px 12px",
+  borderRadius: 999,
+  fontWeight: 800,
+  fontSize: 14,
+  cursor: "pointer",
+  border: "1px dashed " + (dark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.18)"),
+  background: "transparent",
+  color: "inherit",
+});

@@ -1,5 +1,20 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "framer-motion";import { useState } from "react";
+import TutorSheet from "./components/TutorSheet";
+
+// inside your component:
+const [tutorOpen, setTutorOpen] = useState(false);
+
+<><button onClick={() => setTutorOpen(true)}>
+  🧠 Tutor Chat
+</button><TutorSheet
+    open={tutorOpen}
+    onClose={() => setTutorOpen(false)}
+    subject={subject} // "math" | "reading" | "vocab"
+    quiz={item} // pass the current quiz/lesson object if available
+    startingQuestion="I’m stuck—can you give me the first step?"
+    sessionId={`${subject}-${item?.id || "general"}`} /></>
+
 
 export default function QuizCard({ quiz, onSubmit, darkMode, gateShake }) {
   const [selected, setSelected] = useState(null);

@@ -1,91 +1,173 @@
 // src/components/ExplainSheet.jsx
-import React, { useEffect } from "react";
+// src/components/ExplainSheet.jsx
+import { useEffect, useRef } from "react";
 
-export default function ExplainSheet({ open, onClose, dark, children }) {
+/**
+ * ExplainSheet
+ * Bottom-sheet container used by App.jsx to show AI explanations.
+ *
+ * Props:
+ *  - open: boolean
+ *  - onClose: () => void
+ *  - dark?: boolean
+ *  - badge?: string   // optional (e.g., "Mock mode (local)")
+ *  - children: ReactNode  // content area (bullets/tips/next steps)
+ */
+export default function ExplainSheet({ open, onClose, dark, badge, children }) {
+  const listRef = useRef(null);
+
   useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose?.();
-    if (open) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    if (!open) return;
+    // Focus trap-lite + Esc to close
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    // Reset scroll to top each open
+    const t = setTimeout(() => {
+      listRef.current?.scrollTo({ top: 0 });
+    }, 60);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      clearTimeout(t);
+    };
   }, [open, onClose]);
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: open ? "rgba(0,0,0,0.55)" : "transparent",
-          opacity: open ? 1 : 0,
-          transition: "opacity 220ms ease",
-          pointerEvents: open ? "auto" : "none",
-          zIndex: 80,
-        }}
-      />
+  if (!open) return null;
 
-      {/* Sheet */}
+  return (
+    <div style={backdrop} onClick={onClose} aria-label="Close explanation panel">
       <div
         role="dialog"
         aria-modal="true"
-        style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          transform: open ? "translateY(0%)" : "translateY(102%)",
-          transition: "transform 280ms cubic-bezier(.2,.8,.25,1)",
-          background: dark ? "#0f1117" : "#ffffff",
-          color: dark ? "#e5e7eb" : "#111827",
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
-          boxShadow: dark
-            ? "0 -16px 48px rgba(0,0,0,0.6)"
-            : "0 -16px 48px rgba(0,0,0,0.18)",
-          zIndex: 90,
-        }}
+        aria-label="Explain with AI"
+        onClick={(e) => e.stopPropagation()}
+        style={sheet(dark)}
       >
-        {/* Grab bar + Close */}
-        <div
-          style={{
-            padding: "10px 14px 6px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              width: 42,
-              height: 4,
-              borderRadius: 999,
-              background: dark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.12)",
-            }}
-          />
+        {/* Header */}
+        <div style={header(dark)}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontWeight: 800 }}>Explain with AI</span>
+            {badge && <span style={pill(dark)}>{badge}</span>}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={xBtn(dark)}
+          >
+            ✕
+          </button>
         </div>
 
-        <div style={{ padding: "12px 14px 18px", display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <strong>Explain with AI</strong>
-            <button
-              onClick={onClose}
-              style={{
-                border: "1px solid rgba(0,0,0,0.12)",
-                background: "transparent",
-                color: "inherit",
-                borderRadius: 10,
-                fontWeight: 800,
-                padding: "6px 10px",
-                cursor: "pointer",
-              }}
-            >
-              Close
-            </button>
-          </div>
+        {/* Scrollable content */}
+        <div ref={listRef} style={content(dark)}>
+          {children || (
+            <div style={{ opacity: 0.8 }}>No explanation available.</div>
+          )}
+        </div>
 
-          <div>{children}</div>
+        {/* Footer actions (optional extension point) */}
+        <div style={footer(dark)}>
+          <a
+            href={import.meta.env?.VITE_FEEDBACK_FORM_URL || "#"}
+            target="_blank"
+            rel="noreferrer"
+            style={linkBtn(dark)}
+            title="Open feedback form"
+          >
+            ✨ Insider Feedback
+          </a>
+          <button onClick={onClose} style={btn(dark)}>Done</button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
+
+/* ---------------- styles ---------------- */
+
+const backdrop = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.4)",
+  display: "flex",
+  alignItems: "flex-end",
+  justifyContent: "center",
+  zIndex: 1000,
+};
+
+const sheet = (dark) => ({
+  width: "100%",
+  maxWidth: 760,
+  background: dark ? "#111827" : "#ffffff",
+  color: dark ? "#F9FAFB" : "#2B2B2B",
+  borderTopLeftRadius: 16,
+  borderTopRightRadius: 16,
+  boxShadow: "0 -8px 24px rgba(0,0,0,0.35)",
+  padding: 16,
+  border: dark ? "1px solid #1F2937" : "1px solid #E0E7EF",
+});
+
+const header = (dark) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingBottom: 8,
+  borderBottom: dark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.06)",
+});
+
+const xBtn = (dark) => ({
+  border: "none",
+  background: "transparent",
+  color: "inherit",
+  fontSize: 20,
+  cursor: "pointer",
+});
+
+const pill = (dark) => ({
+  fontSize: 12,
+  opacity: 0.9,
+  padding: "2px 8px",
+  borderRadius: 999,
+  background: dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)",
+  border: dark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.08)",
+});
+
+const content = (dark) => ({
+  maxHeight: 320,
+  overflowY: "auto",
+  padding: "10px 2px",
+  marginTop: 8,
+  borderRadius: 10,
+  background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+  border: dark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.06)",
+});
+
+const footer = (dark) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginTop: 12,
+  gap: 8,
+});
+
+const btn = (dark) => ({
+  padding: "8px 12px",
+  borderRadius: 12,
+  border: dark ? "1px solid rgba(255,255,255,0.16)" : "1px solid rgba(0,0,0,0.12)",
+  background: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)",
+  color: "inherit",
+  fontWeight: 800,
+  cursor: "pointer",
+});
+
+const linkBtn = (dark) => ({
+  textDecoration: "none",
+  display: "inline-block",
+  padding: "8px 12px",
+  borderRadius: 12,
+  border: dark ? "1px solid rgba(255,255,255,0.16)" : "1px solid rgba(0,0,0,0.12)",
+  background: "transparent",
+  color: "inherit",
+  fontWeight: 800,
+});
