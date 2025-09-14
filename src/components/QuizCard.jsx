@@ -2,25 +2,11 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import TutorSheet from "./TutorSheet";
 
-
-// inside your component:
-const [tutorOpen, setTutorOpen] = useState(false);
-
-<><button onClick={() => setTutorOpen(true)}>
-  🧠 Tutor Chat
-</button><TutorSheet
-    open={tutorOpen}
-    onClose={() => setTutorOpen(false)}
-    subject={subject} // "math" | "reading" | "vocab"
-    quiz={item} // pass the current quiz/lesson object if available
-    startingQuestion="I’m stuck—can you give me the first step?"
-    sessionId={`${subject}-${item?.id || "general"}`} /></>
-
-
 export default function QuizCard({ quiz, onSubmit, darkMode, gateShake }) {
   const [selected, setSelected] = useState(null);
   const [status, setStatus] = useState("idle"); // 'idle' | 'wrong' | 'correct'
   const [shake, setShake] = useState(false);
+  const [tutorOpen, setTutorOpen] = useState(false);
 
   const groupName = `choice-${quiz.id}`; // ✅ unique radios per quiz
 
@@ -37,8 +23,8 @@ export default function QuizCard({ quiz, onSubmit, darkMode, gateShake }) {
       setStatus("correct");
       onSubmit?.(true);       // ✅ only unlock/advance on correct
     } else {
-      setStatus("wrong");     // ❌ let them try again (inputs stay enabled)
-      onSubmit?.(false);      // optional: record an attempt, but App won’t unlock/advance
+      setStatus("wrong");     // ❌ let them try again
+      onSubmit?.(false);
     }
   };
 
@@ -66,10 +52,9 @@ export default function QuizCard({ quiz, onSubmit, darkMode, gateShake }) {
                 <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}>
                   <input
                     type="radio"
-                    name={groupName}        // ✅ unique per quiz
+                    name={groupName}
                     checked={selected === i}
                     onChange={() => setSelected(i)}
-                    // disabled only after correct, so they can retry when wrong
                     disabled={status === "correct"}
                   />
                   <span
@@ -78,8 +63,8 @@ export default function QuizCard({ quiz, onSubmit, darkMode, gateShake }) {
                       borderRadius: 10,
                       background: showFeedback
                         ? isCorrect
-                          ? "#E6F9F0"  // pale green (correct)
-                          : "#FEECEC"  // pale red (wrong)
+                          ? "#E6F9F0"  // pale green
+                          : "#FEECEC"  // pale red
                         : (darkMode ? "#1F2937" : "#F4F8FC"),
                       border: "1px solid #E0E7EF",
                     }}
@@ -111,6 +96,20 @@ export default function QuizCard({ quiz, onSubmit, darkMode, gateShake }) {
             Submit
           </button>
         )}
+
+        {/* Tutor Chat trigger */}
+        <button style={{ ...btn, background: "#6B21A8", marginLeft: 8 }} onClick={() => setTutorOpen(true)}>
+          🧠 Tutor Chat
+        </button>
+
+        <TutorSheet
+          open={tutorOpen}
+          onClose={() => setTutorOpen(false)}
+          subject={quiz?.subject || "general"}
+          quiz={quiz}
+          startingQuestion="I’m stuck—can you give me the first step?"
+          sessionId={`${quiz?.subject || "general"}-${quiz?.id || "general"}`}
+        />
       </motion.div>
     </motion.section>
   );
@@ -150,5 +149,3 @@ const btn = {
   fontWeight: 600,
   cursor: "pointer",
 };
-
-
