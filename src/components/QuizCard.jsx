@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { motion } from "framer-motion";import { useState } from "react";
-import TutorSheet from "./components/TutorSheet";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import TutorSheet from "./TutorSheet";
+
 
 // inside your component:
 const [tutorOpen, setTutorOpen] = useState(false);
