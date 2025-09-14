@@ -7,7 +7,7 @@ import SubjectPicker from "./components/SubjectPicker";
 import ExplainSheet from "./components/ExplainSheet";
 import TutorSheet from "./components/TutorSheet";
 import MasterySheet from "./components/MasterySheet";
-import SettingsSheet from "./components/SettingsSheet";
+import SettingsSheet from './components/SettingsSheet.jsx';
 import { Adaptive } from "./lib/adaptiveEngine";
 
 /* ---------------- LocalStorage helpers ---------------- */
